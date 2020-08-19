@@ -1,0 +1,80 @@
+.maps {
+  display: flex;
+}
+
+.map {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  width: 500px;
+  height: 500px;
+  background-color: hsl(200, 100%, 50%);
+}
+
+.map + .map {
+  margin-left: 3rem;
+}
+
+.space {
+  border: 1px solid hsla(0, 0%, 100%, .2);
+}
+
+.space:hover {
+  background-color: cadetblue;
+}
+
+#boats {
+  margin-top: 3rem;
+  width: 500px;
+  height: 500px;
+  background-color: gainsboro;
+}
+
+.boat {
+  position: absolute;
+  display: flex;
+  margin: 1rem;
+}
+
+.boat.hor {
+  flex-direction: row;
+}
+
+.boat.ver {
+  flex-direction: column;
+}
+
+.partBoat {
+  width: 50px;
+  height: 50px;
+  border:  solid hsla(0, 0%, 100%, .2);
+  box-sizing: border-box;
+}
+
+.boat:hover > .partBoat {
+  opacity: 0.6;
+}
+
+.damage {
+  background-color: rgb(241, 107, 80);
+}
+
+.b2.valid {
+  background-color: goldenrod;
+}
+
+.b3.valid {
+  background-color: greenyellow;
+}
+
+.b4.valid {
+  background-color: hotpink;
+}
+
+.invalid {
+  background-color: rgb(241, 107, 80);
+}
+
+.out {
+  background-color: gray;
+}
