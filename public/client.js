@@ -10,21 +10,22 @@ ws.onclose = e => {
 }
 
 ws.onmessage = e => {
-  
   let data = e.data;
-  let jsonData = JSON.parse(e.data.substring(2, data.length));
-  let finalMap = document.getElementById('myMap');
-  
-  if(jsonData[0] == 'fail-shoot') {
-    finalMap.children[jsonData[1]].className = finalMap.children[jsonData[1]].className.concat(' out');
-  }
-
-  if(jsonData[0] == 'damage-shoot'){
+  if(data.startsWith('42')) {
+    let jsonData = JSON.parse(e.data.substring(2, data.length));
     let finalMap = document.getElementById('myMap');
-    let space = finalMap.children[jsonData[1]];
-    let over = document.elementsFromPoint(space.getBoundingClientRect().left, space.getBoundingClientRect().top);
-    let partBoat = over.find(element => element.className == "partBoat");
-    partBoat.className = partBoat.className.concat(' damage');    
+    
+    if(jsonData[0] == 'fail-shoot') {
+      finalMap.children[jsonData[1]].setAttribute('shooted', 'water');
+    }
+
+    if(jsonData[0] == 'damage-shoot'){
+      let finalMap = document.getElementById('myMap');
+      let space = finalMap.children[jsonData[1]];
+      let over = document.elementsFromPoint(space.getBoundingClientRect().left, space.getBoundingClientRect().top);
+      let partBoat = over.find(element => element.className == "partBoat");
+      partBoat.setAttribute('shooted', 'damage');
+    }
   }
 }
 
@@ -43,6 +44,7 @@ function live() {
 setInterval(live, 25000);
 
 let boatSelected;
+let myBoats = [];
 
 function boatSelection(element) {
   boatSelected = element;
@@ -63,43 +65,47 @@ document.addEventListener('mouseup', (event) => {
     let elementsUnder = document.elementsFromPoint(event.clientX, event.clientY);
     let inMap = elementsUnder.some( element => element.id == "myMap");
 
-    let boatsUnder = false;
-    for (let i = 0; i < boatSelected.children.length; i++) {
-      let part = boatSelected.children[i];
-      let underBoat = document.elementsFromPoint(part.offsetParent.offsetLeft, part.offsetParent.offsetTop);
-      let boatsUnder = underBoat.filter( element => element.className.includes('boat'));
-      if(boatsUnder && boatsUnder.length > 1) {
-        boatsUnder = true;
-        break;
+    let pos = calculateCoordinates(boatSelected);
+    console.log('-',pos)
+    let boatsUnder = pos.some(coo => {
+      for (let i = 0; i < myBoats.length; i++) {
+        const posBoat = myBoats[i].pos;
+        console.log('+',posBoat)
+        let coinci = posBoat.some(e=>{
+          return e === coo;
+        }); 
+        if(coinci) {
+          return true;
+        }
       }
-    }
+    });
 
     if(!inMap || boatsUnder){
       valid = false;
       boatSelected.style.left = null;
       boatSelected.style.top = null;
-      boatSelected.className = boatSelected.id + " boat valid hor";
+      boatSelected.setAttribute('valid', 'true');
+      boatSelected.setAttribute('row', 'true');
     } else {
-      let space = elementsUnder.find(element => element.className == "space");
-      let hor = boatSelected.className.includes('hor');
+      let space = elementsUnder.find(element => element.getAttribute('type') == 'ocean');
+      let hor = (boatSelected.getAttribute('row') === "true");
       let tam = boatSelected.children.length;
+      let spaceHor = hor ? space.id.charAt(1) : space.id.charAt(0);
       if(hor) {
-        let spaceHor = space.id.charAt(1);
         if (parseInt(spaceHor)+tam > 10 ) {
-          boatSelected.className = boatSelected.id + " boat invalid hor";
           valid = false;
+          boatSelected.setAttribute('valid', valid);
         } else {
-          boatSelected.className = boatSelected.id + " boat valid hor";
           valid = true;
+          boatSelected.setAttribute('valid', valid);
         }
       } else {
-        let spaceHor = space.id.charAt(0);
         if (parseInt(spaceHor)+tam > 10 ) {
-          boatSelected.className = boatSelected.id + " boat invalid ver";
           valid = false;
+          boatSelected.setAttribute('valid', valid);
         } else {
-          boatSelected.className = boatSelected.id + " boat valid ver";
           valid = true;
+          boatSelected.setAttribute('valid', valid);
         }
       }
       boatSelected.style.left = (space.offsetLeft -16) + 'px';
@@ -116,16 +122,15 @@ document.addEventListener('mouseup', (event) => {
   boatSelected = undefined
 });
 
+// Girar barco
 document.addEventListener('keydown', function (event) {
   if (event.key === 'f' && boatSelected) {
-    if(boatSelected.className.includes('hor')) {
-      boatSelected.className = boatSelected.id + ' boat valid ver'
-    } else {
-      boatSelected.className = boatSelected.id + ' boat valid hor';
-    }
+    boatSelected.setAttribute('row', (boatSelected.getAttribute('row') === "false"));
   }
+  console.log(boatSelected.getAttribute('row'))
 });
 
+// Creacion de mapa
 function createMap(num, id) {
   let map = document.getElementById(id);
   for(let i = 0; i < (num*num); i++) {
@@ -138,29 +143,53 @@ function createMap(num, id) {
     }
 
     div.addEventListener("click", (space) => attack(space));
-    div.className = 'space';
+    div.setAttribute('type', 'ocean');
     map.appendChild(div);
   }
   finalMap = map;
 }
 
+// On load
 window.onload = function() {
   createMap(10,"myMap");
   createMap(10,"opponentMap");
 }
 
+// Mandar  coordinadas
 function sendCoordinates(boat) {
+  let pos = calculateCoordinates(boat);
+  let _boat = {"id": boat.id, "pos":pos};
+  let exists = myBoats.find(element => {
+    return element.id == boat.id;
+  });
+
+  if(exists) {
+    myBoats[myBoats.indexOf(exists)] = _boat;
+  } else { 
+    myBoats.push(_boat);
+  }
+  send("boat-pos", [true, _boat]);
+}
+
+// Borrar coordenadas del barco
+function removeCoordinates(boat) {
+  myBoats.splice(myBoats.indexOf(boat));
+}
+
+// Calcular casillas
+function calculateCoordinates(boat) {
   let pos = [];
   for (let i = 0; i < boat.children.length; i++) {
     let under = document.elementsFromPoint(boat.children[i].getBoundingClientRect().left, boat.children[i].getBoundingClientRect().top);
     let space = under.find(element => {
-      return element.className.includes('space');
+      return element.getAttribute('type') == 'ocean';
     });
-    pos.push(space.id);
+    if(space) pos.push(space.id);
   }
-  send("boat-pos", [true, {"id": boat.id, "pos":pos}]);
+  return pos;
 }
 
+// Mandar ataque
 function attack(space) {
   send('attack-boat', space.target.id);
 }

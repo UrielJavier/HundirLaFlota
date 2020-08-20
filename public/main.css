@@ -6,7 +6,7 @@
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(10, 1fr);
-  width: 500px;
+  min-width: 500px;
   height: 500px;
   background-color: hsl(200, 100%, 50%);
 }
@@ -15,11 +15,11 @@
   margin-left: 3rem;
 }
 
-.space {
+[type = "ocean"] {
   border: 1px solid hsla(0, 0%, 100%, .2);
 }
 
-.space:hover {
+[type = "ocean"]:hover {
   background-color: cadetblue;
 }
 
@@ -36,11 +36,11 @@
   margin: 1rem;
 }
 
-.boat.hor {
+[row="true"] {
   flex-direction: row;
 }
 
-.boat.ver {
+[row="false"] {
   flex-direction: column;
 }
 
@@ -55,26 +55,26 @@
   opacity: 0.6;
 }
 
-.damage {
+[shooted="damage"] {
   background-color: rgb(241, 107, 80);
 }
 
-.b2.valid {
+.b2[valid="true"] {
   background-color: goldenrod;
 }
 
-.b3.valid {
+.b3[valid="true"] {
   background-color: greenyellow;
 }
 
-.b4.valid {
+.b4[valid="true"] {
   background-color: hotpink;
 }
 
-.invalid {
+[valid="false"] {
   background-color: rgb(241, 107, 80);
 }
 
-.out {
+[shooted="water"] {
   background-color: gray;
 }
