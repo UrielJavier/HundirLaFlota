@@ -1,4 +1,14 @@
-let ws = new WebSocket('ws://localhost:3000/socket.io/?EIO=3&transport=websocket');
+let ws = new WebSocket('ws://localhost:3001/socket.io/?EIO=3&transport=websocket');
+let boatSelected;
+let finalMap;
+let otherMap;
+let btnStart;
+const numBoats = 3;
+let myBoats = [];
+let gameOverDivs = [];
+let start = false;
+let myTurn = false;
+let player;
 
 ws.onopen = () => {
   //console.log("Conectado");
@@ -13,18 +23,37 @@ ws.onmessage = e => {
   let data = e.data;
   if(data.startsWith('42')) {
     let jsonData = JSON.parse(e.data.substring(2, data.length));
-    let finalMap = document.getElementById('myMap');
-    
-    if(jsonData[0] == 'fail-shoot') {
-      finalMap.children[jsonData[1]].setAttribute('shooted', 'water');
-    }
-
-    if(jsonData[0] == 'damage-shoot'){
-      let finalMap = document.getElementById('myMap');
-      let space = finalMap.children[jsonData[1]];
-      let over = document.elementsFromPoint(space.getBoundingClientRect().left, space.getBoundingClientRect().top);
-      let partBoat = over.find(element => element.className == "partBoat");
-      partBoat.setAttribute('shooted', 'damage');
+    switch(jsonData[0]) {
+      case 'fail-shoot':
+        finalMap.children[jsonData[1]].setAttribute('shooted', 'water');
+        break;
+      case 'fail-shoot-other':
+        otherMap.children[jsonData[1]].setAttribute('shooted', 'water');
+        break;
+      case 'damage-shoot':
+        let partBoat = document.getElementById(jsonData[1]+"p")
+        partBoat.setAttribute('shooted', 'damage');
+        break;
+      case 'damage-shoot-other':
+        let space2 = otherMap.children[jsonData[1]];
+        space2.setAttribute('shooted', 'damage');
+        break;
+      case 'number-player':
+        player = document.getElementById('player').innerHTML = jsonData[1];
+        break;
+      case 'turn':
+        myTurn = (jsonData[1] == player);
+        if(myTurn) {
+          document.getElementById('turno1').setAttribute('turn', true);
+          document.getElementById('turno2').setAttribute('turn', false);
+        } else {
+          document.getElementById('turno1').setAttribute('turn', false);
+          document.getElementById('turno2').setAttribute('turn', true);
+        }
+        break;
+      case 'game-over': 
+        gameOver(jsonData[1]);
+        break
     }
   }
 }
@@ -43,15 +72,16 @@ function live() {
 
 setInterval(live, 25000);
 
-let boatSelected;
-let myBoats = [];
 
 function boatSelection(element) {
-  boatSelected = element;
+  if(!start) {
+    boatSelected = element;
+    boatSelected.setAttribute('moving', 'true');
+  }
 }
 
 document.addEventListener('mousemove', (event) => {
-  if (event && boatSelected) {
+  if (event && boatSelected && !start) {
     let x = event.clientX;
     let y = event.clientY;
     boatSelected.style.left = (x - 50) + 'px';
@@ -61,59 +91,33 @@ document.addEventListener('mousemove', (event) => {
 
 document.addEventListener('mouseup', (event) => {
   let valid = false;
+
+  if(start){return;}
+
   if(boatSelected) {
     let elementsUnder = document.elementsFromPoint(event.clientX, event.clientY);
     let inMap = elementsUnder.some( element => element.id == "myMap");
 
-    let pos = calculateCoordinates(boatSelected);
-    console.log('-',pos)
-    let boatsUnder = pos.some(coo => {
-      for (let i = 0; i < myBoats.length; i++) {
-        const posBoat = myBoats[i].pos;
-        console.log('+',posBoat)
-        let coinci = posBoat.some(e=>{
-          return e === coo;
-        }); 
-        if(coinci) {
-          return true;
-        }
-      }
-    });
+    let pos = calculateCoordinates(boatSelected, elementsUnder);
+    let validPos = validationPos(boatSelected, pos);
 
-    if(!inMap || boatsUnder){
+    if(!inMap || !validPos){
       valid = false;
+      boatSelected.setAttribute('moving', 'false');
       boatSelected.style.left = null;
       boatSelected.style.top = null;
       boatSelected.setAttribute('valid', 'true');
       boatSelected.setAttribute('row', 'true');
     } else {
       let space = elementsUnder.find(element => element.getAttribute('type') == 'ocean');
-      let hor = (boatSelected.getAttribute('row') === "true");
-      let tam = boatSelected.children.length;
-      let spaceHor = hor ? space.id.charAt(1) : space.id.charAt(0);
-      if(hor) {
-        if (parseInt(spaceHor)+tam > 10 ) {
-          valid = false;
-          boatSelected.setAttribute('valid', valid);
-        } else {
-          valid = true;
-          boatSelected.setAttribute('valid', valid);
-        }
-      } else {
-        if (parseInt(spaceHor)+tam > 10 ) {
-          valid = false;
-          boatSelected.setAttribute('valid', valid);
-        } else {
-          valid = true;
-          boatSelected.setAttribute('valid', valid);
-        }
-      }
-      boatSelected.style.left = (space.offsetLeft -16) + 'px';
-      boatSelected.style.top = (space.offsetTop-16) + 'px';
+      boatSelected.style.left = (space.offsetLeft) + 'px';
+      boatSelected.style.top = (space.offsetTop) + 'px';
+      valid = true;
     }
 
     if(valid){
-      sendCoordinates(boatSelected);
+      sendCoordinates(boatSelected, pos);
+      enableStart();
     } else {
       send("boat-pos", [false, {"id": boatSelected.id}]);
     } 
@@ -122,12 +126,16 @@ document.addEventListener('mouseup', (event) => {
   boatSelected = undefined
 });
 
+// Habilitar boton de empezar
+function enableStart(){
+  btnStart.disabled = myBoats.length !== numBoats; 
+}
+
 // Girar barco
 document.addEventListener('keydown', function (event) {
   if (event.key === 'f' && boatSelected) {
     boatSelected.setAttribute('row', (boatSelected.getAttribute('row') === "false"));
   }
-  console.log(boatSelected.getAttribute('row'))
 });
 
 // Creacion de mapa
@@ -142,32 +150,29 @@ function createMap(num, id) {
       div.id = i;
     }
 
-    div.addEventListener("click", (space) => attack(space));
+    if(id != "myMap") div.addEventListener("click", (space) => attack(space));
     div.setAttribute('type', 'ocean');
     map.appendChild(div);
   }
-  finalMap = map;
+
+  (id == 'myMap') ? finalMap = map : otherMap = map;
 }
 
 // On load
 window.onload = function() {
   createMap(10,"myMap");
   createMap(10,"opponentMap");
+  btnStart = document.getElementById("helpStart");
+  gameOverDivs.push(document.getElementById("gameOver-1"));
+  gameOverDivs.push(document.getElementById("gameOver-2"));
+  gameOverDivs[0].hidden = true;
+  gameOverDivs[1].hidden = true;
+  enableStart();
 }
 
 // Mandar  coordinadas
-function sendCoordinates(boat) {
-  let pos = calculateCoordinates(boat);
+function sendCoordinates(boat, pos) {
   let _boat = {"id": boat.id, "pos":pos};
-  let exists = myBoats.find(element => {
-    return element.id == boat.id;
-  });
-
-  if(exists) {
-    myBoats[myBoats.indexOf(exists)] = _boat;
-  } else { 
-    myBoats.push(_boat);
-  }
   send("boat-pos", [true, _boat]);
 }
 
@@ -177,19 +182,95 @@ function removeCoordinates(boat) {
 }
 
 // Calcular casillas
-function calculateCoordinates(boat) {
+function calculateCoordinates(boat, raton) {
   let pos = [];
-  for (let i = 0; i < boat.children.length; i++) {
-    let under = document.elementsFromPoint(boat.children[i].getBoundingClientRect().left, boat.children[i].getBoundingClientRect().top);
-    let space = under.find(element => {
-      return element.getAttribute('type') == 'ocean';
-    });
-    if(space) pos.push(space.id);
+  let space = raton.find(element => element.getAttribute('type') == 'ocean');
+  let hor = (boatSelected.getAttribute('row') === "true");
+
+  for(let i = 0; i < boat.children.length; i++){
+    if(hor) {
+      let y = space.id[0];
+      let x = parseInt(space.id[1])+i;
+      let posp = y.concat(x);
+      pos.push(posp);
+      boat.children[i].id = posp+'p';
+    } else {
+      let y = parseInt(space.id[0])+i;
+      let x = space.id[1];
+      let posp = y.toString().concat(x);
+      pos.push(posp);
+      boat.children[i].id = posp+'p';
+    }
   }
   return pos;
 }
 
+// Validar pos
+function validationPos(boat, posBoat) {
+  let occupied = false;
+  let out = false;
+  console.log(myBoats)
+  
+  for (let i = 0; i < posBoat.length; i++) {
+    for (let j = 0; j < myBoats.length; j++) {
+      occupied = myBoats[j].pos.some(a => a == posBoat[i]);
+      console.log(myBoats[j].pos)
+      console.log(posBoat[i])
+      if(occupied) break;
+    }
+    out = posBoat[i].length > 2;
+    if(occupied || out) break;
+  }
+
+  let valid = !occupied && !out;
+
+  let exists = myBoats.some(bo => {
+    return bo.id == boat.id;
+  });
+
+  if(valid && !exists) {
+    myBoats.push({id:boat.id, pos:posBoat});
+  } else if(exists && !valid) {
+    const index = myBoats.map(b => b.id).indexOf(boat.id);
+    if (index > -1) {
+      myBoats.splice(index, 1);
+    }
+
+    for (let part = 0; part < boat.children.length; part++) {
+      boat.children[part].removeAttribute('id');
+    }
+  } else if(valid && exists) {
+    const index = myBoats.map(b => b.id).indexOf(boat.id);
+    if (index > -1) {
+      myBoats.splice(index, 1);
+    }
+    myBoats.push({id:boat.id, pos:posBoat});
+  }
+  console.log(valid)
+  return valid;
+}
+
 // Mandar ataque
 function attack(space) {
-  send('attack-boat', space.target.id);
+  if(myTurn) send('attack-boat', space.target.id);
+}
+
+// Comenzar partida
+function startGame() {
+  start = true;
+  send('start', player);
+}
+
+// Terminar partida
+function gameOver(ganador) {
+  gameOverDivs[0].hidden = false;
+  gameOverDivs[1].hidden = false;
+
+  if(ganador[1] == 1) {
+    gameOverDivs[0].innerHTML = "WINNER";
+    gameOverDivs[1].innerHTML = "LOSSER";
+  } else {
+    gameOverDivs[0].innerHTML = "LOSSER";
+    gameOverDivs[1].innerHTML = "WINNER";
+  }
 }

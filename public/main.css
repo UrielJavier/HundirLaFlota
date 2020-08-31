@@ -1,39 +1,147 @@
-.maps {
+/* General */
+* {
+  font-family: 'Raleway', sans-serif;
+}
+
+body {
   display: flex;
+  flex-direction:column;
 }
 
-.map {
+/* Presentacion */
+.title {
+  text-align: center;
+  font-size: 4rem;
+  background-color: silver;
+}
+
+/* Juego */
+
+#juego {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  grid-template-rows: repeat(10, 1fr);
-  min-width: 500px;
-  height: 500px;
-  background-color: hsl(200, 100%, 50%);
+  grid-template-columns: 300px 500px 500px;
+  grid-template-rows: 1fr 500px;
 }
 
-.map + .map {
-  margin-left: 3rem;
+#juego > div {
+  margin: 1rem;
+  padding: 1rem;
 }
 
-[type = "ocean"] {
-  border: 1px solid hsla(0, 0%, 100%, .2);
+#help {
+  background-color: slateblue;
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 1;
+  grid-row-end: 2;
+  text-align: center;
 }
 
-[type = "ocean"]:hover {
-  background-color: cadetblue;
+#help-title {
+  font-weight: bold;
+  font-size: 1.4rem;
+}
+
+#help-tip {
+  font-size: 1.3rem;
+}
+
+#helpStart {
+  border: 0;
+  width: 10rem;
+  height: 3rem;
+}
+
+#info {
+  background-color: steelblue;
+  grid-column-start: 2;
+  grid-column-end: 4;
+  grid-row-start: 1;
+  grid-row-end: 2;
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.info-tablero {
+  font-weight: bold;
+  font-size: 1.4rem;
+}
+
+.gameOver {
+  font-weight: bold;
+  font-size: 3rem;
+}
+
+#info-jugador {
+  text-align: center;
+}
+
+.turno {
+  margin: auto;
+  background-color: rgb(236, 236, 236);
+  opacity: 0.4;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 1px solid black;
+}
+
+[turn="true"] {
+  background-color: greenyellow;
+}
+
+[turn="false"] {
+  background-color: rgb(236, 236, 236);
+  opacity: 0.4;
 }
 
 #boats {
-  margin-top: 3rem;
-  width: 500px;
-  height: 500px;
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+
+#myMap {
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+
+#opponentMap {
+  grid-column-start: 3;
+  grid-column-end: 4;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+
+
+/* Tablero general */
+
+#tableros {
+  display: flex;
+}
+
+/* Barcos */
+
+#boats {
   background-color: gainsboro;
 }
 
 .boat {
-  position: absolute;
   display: flex;
-  margin: 1rem;
+  width: min-content;
+}
+
+[moving="false"] {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+[moving="true"] {
+  position: absolute;
 }
 
 [row="true"] {
@@ -45,8 +153,8 @@
 }
 
 .partBoat {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   border:  solid hsla(0, 0%, 100%, .2);
   box-sizing: border-box;
 }
@@ -77,4 +185,21 @@
 
 [shooted="water"] {
   background-color: gray;
+}
+
+/* Mapas */
+
+.map {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  background-color: hsl(200, 100%, 50%);
+}
+
+[type = "ocean"] {
+  border: 1px solid hsla(0, 0%, 100%, .2);
+}
+
+[type = "ocean"]:hover {
+  background-color: cadetblue;
 }

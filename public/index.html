@@ -6,31 +6,57 @@
   <title>Document</title>
   <script src="client.js"></script>
   <link rel="stylesheet" type="text/css" href="main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="maps">
+
+  <div id="presentacion">
+    <h1 class="title">Hundir el socket</h1>
+  </div>
+
+  <div id="juego">
+    <div id="help">
+      <p id="help-title">Eres el jugador <span id="player"></span></p>
+      <p id="help-tip">Coloca tus barcos para poder comenzar</p>
+      <button id="helpStart" onclick="startGame()">COMENZAR</button>
+      <p id="help-aviso">Tu contrincante todavia no esta preparado</p>
+    </div>
+
+    <div id="info">
+      <div class="info-jugador">
+        <p class="info-tablero">Your board</p>
+        <p class="info-turn">Your turn</p>
+        <div id="turno1" class="turno"></div>
+        <p id="gameOver-1" class="gameOver">WINNER</p>
+      </div>
+      <div class="info-jugador">
+        <p class="info-tablero">Opponent board</p>
+        <p class="info-turn">Opponent turn</p>
+        <div id="turno2" class="turno"></div>
+        <p id="gameOver-2" class="gameOver">LOSSER</p>
+      </div>
+    </div>
+
+    <div id="boats">
+      <div class="b2 boat" row="true" valid="true" id="b2" moving="false" onmousedown="boatSelection(this)">
+        <div class="partBoat"></div>
+        <div class="partBoat"></div>
+      </div>
+      <div class="b3 boat" row="true" valid="true" id="b3" moving="false" onmousedown="boatSelection(this)">
+        <div class="partBoat"></div>
+        <div class="partBoat"></div>
+        <div class="partBoat"></div>
+      </div>
+      <div class="b4 boat" row="true" valid="true" id="b4" moving="false" onmousedown="boatSelection(this)">
+        <div class="partBoat"></div>
+        <div class="partBoat"></div>
+        <div class="partBoat"></div>
+        <div class="partBoat"></div>
+      </div>
+    </div>
     <div id="myMap" class="map"></div> 
     <div id="opponentMap" class="map"></div>
   </div>
-  <div id="boats">
-    <div class="b2 boat" row="true" valid="true" id="b2" onmousedown="boatSelection(this)">
-      <div class="partBoat"></div>
-      <div class="partBoat"></div>
-    </div>
-
-    <div class="b3 boat" row="true" valid="true" id="b3" onmousedown="boatSelection(this)">
-      <div class="partBoat"></div>
-      <div class="partBoat"></div>
-      <div class="partBoat"></div>
-    </div>
-
-    <div class="b4 boat" row="true" valid="true" id="b4" onmousedown="boatSelection(this)">
-      <div class="partBoat"></div>
-      <div class="partBoat"></div>
-      <div class="partBoat"></div>
-      <div class="partBoat"></div>
-    </div>
-
-  </div>
+  
 </body>
 </html>
